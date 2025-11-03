@@ -1,0 +1,91 @@
+# .gitignore for .NET projects
+
+# Ignore build results
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+.history/
+
+# Rider
+.idea/
+*.sln.iml
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# NuGet
+*.nupkg
+.nuget/
+
+# Others
+*.swp
+*.bak
+*.tmp
+*.vspscc
+*.vssscc
+
+# Local secrets
+secrets.json
+appsettings.Development.json
+
+# Test results
+TestResults/
+
+# Resharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+
+# DotCover
+*.dotCover
+
+# Coverage
+coverage/
+coverage*.json
+coverage*.xml
+coverage*.info
+
+# SonarQube
+.sonar/
+
+# Azure Pipelines
+.azure-pipelines/
+
+# JetBrains Rider
+.idea/
+
+# Windows image file caches
+Thumbs.db
+
+# Folder config file
+Desktop.ini
+
+# Python virtual environments (if any)
+venv/
+ENV/
+
+# npm packages (if any)
+node_modules/
+
+# VS for Mac
+.vscode/
+
+# Local tools
+.localtoolstarget
+
+# Backup files
+*~
+
+# Ignore all appsettings.Development.json but keep appsettings.json
+*appsettings.Development.json

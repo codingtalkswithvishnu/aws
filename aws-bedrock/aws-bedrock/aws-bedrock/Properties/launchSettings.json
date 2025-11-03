@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "aws-bedrock": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
