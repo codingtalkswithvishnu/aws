@@ -1,0 +1,112 @@
+# Strands Framework Configuration
+# Demo Customer Service Agent Project
+
+name: customer-service-agent
+version: 1.0.0
+description: "Demo Strands agent for customer service automation"
+
+# Runtime Configuration
+runtime:
+  python_version: "3.9"
+  memory: 512MB
+  timeout: 300
+
+# AWS Configuration
+aws:
+  region: us-east-1
+  profile: default
+  role_arn: arn:aws:iam::123456789012:role/StrandsAgentRole
+
+# Deployment Targets
+deployment:
+  # Agent Core Deployment
+  agent-core:
+    target: agent-core
+    region: us-east-1
+    runtime: python3.9
+    memory: 512MB
+    
+  # Lambda Deployment
+  lambda:
+    target: lambda
+    runtime: python3.9
+    memory: 1024
+    timeout: 300
+    triggers:
+      - type: api-gateway
+        path: /customer-service
+      - type: sqs
+        queue: customer-requests
+        batch_size: 10
+        
+  # Container Deployment
+  container:
+    target: ecs
+    image: customer-service-agent
+    cpu: 256
+    memory: 512
+    replicas: 2
+
+# Environment Variables
+environment:
+  AWS_REGION: us-east-1
+  AGENT_S3_BUCKET: customer-service-documents
+  ELASTICACHE_ENDPOINT: redis-cluster.abc123.cache.amazonaws.com
+  WEATHER_API_KEY: ${WEATHER_API_KEY}
+  LOG_LEVEL: INFO
+
+# Agent Configuration
+agents:
+  - name: coordinator-agent
+    file: agents/coordinator-agent.py
+    description: "Main coordinator for customer service workflows"
+    
+  - name: data-collector
+    file: agents/step-handlers/step1_handler.py
+    description: "Collects customer data and context"
+    
+  - name: analyzer
+    file: agents/step-handlers/step2_handler.py
+    description: "Analyzes customer issues and determines solutions"
+    
+  - name: reporter
+    file: agents/step-handlers/step3_handler.py
+    description: "Generates reports and responses"
+
+# Workflows
+workflows:
+  - name: customer-support-workflow
+    file: workflows/main-workflow.yaml
+    description: "End-to-end customer support process"
+
+# Tools and Integrations
+tools:
+  weather_api:
+    type: rest_api
+    base_url: https://api.weather.com/v1
+    auth_type: api_key
+    
+  customer_database:
+    type: database
+    connection_string: ${DATABASE_URL}
+    
+  mcp_filesystem:
+    type: mcp_server
+    command: "npx @modelcontextprotocol/server-filesystem /customer-files"
+
+# Monitoring and Logging
+monitoring:
+  enabled: true
+  log_level: INFO
+  metrics:
+    - agent_execution_time
+    - tool_usage_count
+    - error_rate
+    - memory_usage
+
+# Security
+security:
+  encryption_at_rest: true
+  encryption_in_transit: true
+  audit_logging: true
+  role_based_access: true

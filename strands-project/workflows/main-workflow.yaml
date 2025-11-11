@@ -1,0 +1,236 @@
+# Strands Framework Demo - Main Workflow Configuration
+# Customer Service Multi-Step Workflow
+
+name: "customer-support-workflow"
+version: "1.0.0"
+description: "End-to-end customer support process with data collection, analysis, and reporting"
+
+# Workflow Configuration
+workflow:
+  # Input schema
+  input_schema:
+    type: object
+    properties:
+      customer_id:
+        type: string
+        description: "Unique customer identifier"
+        required: true
+      issue_description:
+        type: string
+        description: "Customer's description of the issue"
+        required: true
+      channel:
+        type: string
+        description: "Communication channel (email, chat, phone)"
+        default: "email"
+      priority_override:
+        type: string
+        description: "Manual priority override if needed"
+        enum: ["low", "medium", "high", "critical"]
+        required: false
+
+  # Workflow steps
+  steps:
+    - name: "data-collection"
+      agent: "data-collector"
+      description: "Collect customer data and context"
+      timeout: 60
+      retry_policy:
+        max_attempts: 3
+        backoff_multiplier: 2
+      input_mapping:
+        customer_id: "$.input.customer_id"
+        channel: "$.input.channel"
+      output_mapping:
+        customer_data: "$.output.data"
+      
+    - name: "analysis"
+      agent: "analyzer"
+      description: "Analyze customer issue and determine solution"
+      depends_on: ["data-collection"]
+      timeout: 120
+      retry_policy:
+        max_attempts: 2
+        backoff_multiplier: 1.5
+      input_mapping:
+        customer_id: "$.input.customer_id"
+        issue_description: "$.input.issue_description"
+        data: "$.steps.data-collection.output.data"
+        priority_override: "$.input.priority_override"
+      output_mapping:
+        analysis_result: "$.output.analysis"
+      
+    - name: "reporting"
+      agent: "reporter"
+      description: "Generate response and create reports"
+      depends_on: ["analysis"]
+      timeout: 90
+      retry_policy:
+        max_attempts: 2
+        backoff_multiplier: 1.5
+      input_mapping:
+        customer_id: "$.input.customer_id"
+        data: "$.steps.data-collection.output.data"
+        analysis: "$.steps.analysis.output.analysis"
+      output_mapping:
+        final_response: "$.output.outputs.customer_response"
+        internal_report: "$.output.outputs.internal_report"
+
+  # Conditional steps
+  conditional_steps:
+    - name: "escalation"
+      condition: "$.steps.analysis.output.analysis.priority.level == 'critical'"
+      agent: "escalation-handler"
+      description: "Handle critical issue escalation"
+      depends_on: ["analysis"]
+      timeout: 30
+      input_mapping:
+        customer_id: "$.input.customer_id"
+        analysis: "$.steps.analysis.output.analysis"
+        
+    - name: "quality-check"
+      condition: "$.steps.analysis.output.analysis.confidence_score < 0.7"
+      agent: "quality-checker"
+      description: "Perform quality check for low confidence analysis"
+      depends_on: ["analysis"]
+      timeout: 45
+      input_mapping:
+        customer_id: "$.input.customer_id"
+        analysis: "$.steps.analysis.output.analysis"
+
+  # Error handling
+  error_handling:
+    - step: "data-collection"
+      on_error: "continue"
+      fallback_action: "use_cached_data"
+      
+    - step: "analysis"
+      on_error: "retry"
+      max_retries: 2
+      fallback_action: "escalate_to_human"
+      
+    - step: "reporting"
+      on_error: "continue"
+      fallback_action: "send_generic_response"
+
+  # Output schema
+  output_schema:
+    type: object
+    properties:
+      customer_id:
+        type: string
+      status:
+        type: string
+        enum: ["completed", "escalated", "failed"]
+      customer_response:
+        type: object
+        properties:
+          response_text: 
+            type: string
+          category:
+            type: string
+          priority_level:
+            type: string
+      processing_summary:
+        type: object
+        properties:
+          total_time:
+            type: string
+          steps_completed:
+            type: array
+          confidence_score:
+            type: number
+      escalation_required:
+        type: boolean
+
+# Monitoring and Observability
+monitoring:
+  metrics:
+    - name: "workflow_duration"
+      type: "timer"
+      description: "Total workflow execution time"
+      
+    - name: "step_success_rate"
+      type: "counter"
+      description: "Success rate per step"
+      labels: ["step_name", "agent_name"]
+      
+    - name: "confidence_score_distribution"
+      type: "histogram"
+      description: "Distribution of analysis confidence scores"
+      
+    - name: "escalation_rate"
+      type: "gauge"
+      description: "Rate of issues requiring escalation"
+
+  alerts:
+    - name: "high_failure_rate"
+      condition: "step_success_rate < 0.95"
+      severity: "warning"
+      notification_channels: ["slack", "email"]
+      
+    - name: "workflow_timeout"
+      condition: "workflow_duration > 300"
+      severity: "critical"
+      notification_channels: ["pagerduty", "slack"]
+      
+    - name: "low_confidence_trend"
+      condition: "avg(confidence_score_distribution) < 0.6"
+      severity: "warning"
+      notification_channels: ["email"]
+
+# Security and Compliance
+security:
+  encryption:
+    at_rest: true
+    in_transit: true
+    
+  audit_logging:
+    enabled: true
+    log_level: "INFO"
+    include_sensitive_data: false
+    
+  access_control:
+    required_permissions:
+      - "customer_data_read"
+      - "support_workflow_execute"
+    
+  data_retention:
+    workflow_logs: "90 days"
+    customer_data: "7 years"
+    audit_logs: "5 years"
+
+# Performance Configuration
+performance:
+  concurrency:
+    max_parallel_workflows: 100
+    max_parallel_steps: 10
+    
+  resource_limits:
+    memory_per_step: "512MB"
+    cpu_per_step: "0.5 vCPU"
+    
+  caching:
+    customer_data_ttl: "1 hour"
+    analysis_results_ttl: "24 hours"
+    
+  optimization:
+    enable_step_parallelization: true
+    enable_result_caching: true
+    enable_warm_starts: true
+
+# Environment-specific Configuration
+environments:
+  development:
+    timeout_multiplier: 2.0
+    retry_attempts_multiplier: 1.5
+    enable_debug_logging: true
+    
+  staging:
+    timeout_multiplier: 1.5
+    enable_performance_profiling: true
+    
+  production:
+    timeout_multiplier: 1.0
+    enable_advanced_monitoring: true
+    enable_auto_scaling: true
